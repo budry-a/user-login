@@ -1,46 +1,25 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Scanner;
 
+/**
+ * This class is responsible for managing user's credentials
+ */
 public class Login {
 
-	private HashMap<String, String> credentials = new HashMap<>();
+	private HashMap<String, Credentials> credentials = new HashMap<>();
 
-	/**
-	 * Compute the SHA256 hash of the provided password
-	 * 
-	 * @param password the password provided
-	 * @return a string representing the hash
-	 */
-	String SHA(String password) {
-		try {
-			MessageDigest md = MessageDigest.getInstance("SHA-256");
-			md.update(password.getBytes());
-			byte[] digest = md.digest();
-			StringBuilder sb = new StringBuilder();
-			for (byte b : digest) {
-				sb.append(String.format("%02x", b));
-			}
-			return sb.toString();
-		} catch (NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return null;
-	}
-
+	
 	/**
 	 * Add provided credentials to the hashmap. Only hashed password is stored.
 	 * 
 	 * @param userName - the username
 	 * @param password - the hashed password
 	 */
-	void addCredentials(String userName, String password) {
-		credentials.put(userName, SHA(password));
+	public void addCredentials(String username, String password) {
+		credentials.put(username, new Credentials(username, password));
 	}
 
 	/**
@@ -50,13 +29,9 @@ public class Login {
 	 * @param password - the password
 	 * @return true if correct, false if incorrect
 	 */
-	boolean isValid(String userName, String password) {
-		if (credentials.containsKey(userName)) {
-			if (credentials.get(userName).equals(SHA(password))) {
-				return true;
-			}
-		}
-		return false;
+	public boolean isValid(String username, String password) {
+		Credentials credential = credentials.get(username);
+		return credential!=null && credential.isPasswordValid(password);
 	}
 
 	/**
@@ -64,7 +39,7 @@ public class Login {
 	 * 
 	 * @param filename file to read from
 	 */
-	void loadFile(String filename) {
+	public void loadFile(String filename) {
 		try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
 			String line;
 			String username;
@@ -86,6 +61,8 @@ public class Login {
 		}
 
 	}
+	
+	
 
 	/**
 	 * Where the program starts
@@ -107,12 +84,12 @@ public class Login {
 
 		// get username and password from user
 		System.out.print("Enter your user name: ");
-		String userName = scanner.nextLine();
+		String username = scanner.nextLine();
 		System.out.print("Enter your password: ");
 		String password = scanner.nextLine();
 
 		// if username and password are correct, then grant access
-		if (login.isValid(userName, password)) {
+		if (login.isValid(username, password)) {
 			System.out.println("Access granted!");
 		} else {
 			System.out.println("Access denied!");
