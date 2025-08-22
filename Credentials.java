@@ -53,6 +53,15 @@ public class Credentials {
 	}
 	
 	/**
+	 * Accessor for passwordHash
+	 * 
+	 * @return passwordHash
+	 */
+	public String getPasswordHash() {
+		return passwordHash;
+	}
+	
+	/**
 	 * Compares the hash of the password given to the password hash saved
 	 * 
 	 * @param password the password given

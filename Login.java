@@ -1,4 +1,5 @@
 import java.io.BufferedReader;
+import java.io.Console;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
@@ -9,19 +10,6 @@ import java.util.Scanner;
  */
 public class Login {
 
-	private HashMap<String, Credentials> credentials = new HashMap<>();
-
-	
-	/**
-	 * Add provided credentials to the hashmap. Only hashed password is stored.
-	 * 
-	 * @param userName - the username
-	 * @param password - the hashed password
-	 */
-	public void addCredentials(String username, String password) {
-		credentials.put(username, new Credentials(username, password));
-	}
-
 	/**
 	 * Check if credentials are correct
 	 * 
@@ -29,40 +17,10 @@ public class Login {
 	 * @param password - the password
 	 * @return true if correct, false if incorrect
 	 */
-	public boolean isValid(String username, String password) {
-		Credentials credential = credentials.get(username);
+	public boolean isValid(String username, String password, Credentials credential) {
 		return credential!=null && credential.isPasswordValid(password);
 	}
 
-	/**
-	 * Read credentials from a file
-	 * 
-	 * @param filename file to read from
-	 */
-	public void loadFile(String filename) {
-		try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
-			String line;
-			String username;
-			String password;
-			while ((line = reader.readLine()) != null) {
-				if (line.isBlank()) {
-					username = reader.readLine();
-					password = reader.readLine();
-				} else {
-					username = line;
-					password = reader.readLine();
-				}
-				username = username.replace("username: ", "");
-				password = password.replace("password: ", "");
-				addCredentials(username, password);
-			}
-		} catch (IOException e) {
-			System.err.println("Unable to read file");
-		}
-
-	}
-	
-	
 
 	/**
 	 * Where the program starts
@@ -72,28 +30,39 @@ public class Login {
 	public static void main(String[] args) {
 		Scanner scanner = new Scanner(System.in);
 		Login login = new Login();
-
-		// some sample credentials to test with
-//		login.addCredentials("real username", "real password");
-//		login.addCredentials("hacker", "123");
-//		login.addCredentials("hello", "world");
-//		login.addCredentials("bye", "bye");
-
-		// add credentials from file
-		login.loadFile("src/passwords.txt");
-
+		Database db = new Database();
+		Credentials credential;
+		int choice=0;
+		Console console = System.console();
+		String username;
+		db.checkDBExists();
+		db.connect();
+		try {
+			System.out.println("Login(1) or Signup(2)?");
+			choice = Integer.parseInt(scanner.nextLine());
+			if(choice!=1||choice!=2) throw new NumberFormatException();
+		} catch (NumberFormatException e) {
+			System.err.println("Please enter 1 for login or 2 for signup");
+		}
+		
 		// get username and password from user
 		System.out.print("Enter your user name: ");
-		String username = scanner.nextLine();
-		System.out.print("Enter your password: ");
-		String password = scanner.nextLine();
-
-		// if username and password are correct, then grant access
-		if (login.isValid(username, password)) {
-			System.out.println("Access granted!");
-		} else {
-			System.out.println("Access denied!");
+		username = scanner.nextLine();
+		char[] password = console.readPassword("\"Enter your password: ");
+		credential = new Credentials(username, password.toString());
+		
+		if(choice==1) {
+			// if username and password are correct, then grant access
+			String hashedPass = db.getCredentials(username);
+			if (hashedPass!=null && login.isValid(username, password.toString(), credential)) {
+				System.out.println("Access granted!");
+			} else {
+				System.out.println("Access denied!");
+			}
+		} else if(choice==2) {
+			db.addUser(credential);
 		}
+		
 
 		scanner.close();
 	}
