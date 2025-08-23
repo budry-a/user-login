@@ -1,10 +1,11 @@
-import java.io.Console;
 import java.io.File;
 import java.sql.*;
 import java.util.Scanner;
-
 import org.sqlite.SQLiteDataSource;
 
+/**
+ * This class is responsible for creating, and connecting to a database
+ */
 public class Database {
 
 	private Connection connection;
@@ -18,6 +19,9 @@ public class Database {
 		dataSource = new SQLiteDataSource();
 	}
 	
+	/**
+	 * If the database already exists, prompt to delete
+	 */
 	public void checkDBExists() {
 		File dbFile = new File("credentialsDB");
 		if (dbFile.exists()) {
@@ -29,6 +33,9 @@ public class Database {
 		}
 	}
 	
+	/**
+	 * Connect to database
+	 */
 	public void connect() {
 		dataSource.setUrl(dbURL);
 		try {
@@ -39,6 +46,9 @@ public class Database {
 		}
 	}
 	
+	/**
+	 * Create a table in the database
+	 */
 	public void createTable() {
 		String addTable = "CREATE TABLE IF NOT EXISTS users (username VARCHAR, password_hash VARCHAR);";
 		try (Statement s1 = connection.createStatement();) {
@@ -49,6 +59,10 @@ public class Database {
 		}
 	}
 	
+	/**
+	 * Add new user credential to database
+	 * @param credential The credentials to add
+	 */
 	public void addUser(Credentials credential) {
 		String username = credential.getUsername();
 		String verifyUser = "SELECT * FROM users WHERE username = ?;";
@@ -56,7 +70,7 @@ public class Database {
 			s.setString(1, username);
 			ResultSet rs = s.executeQuery();
 			if(rs.next()) {
-				System.out.println("Username exists!");
+				System.out.println("Username exists!"); // if username already exists, don't add
 			} else {
 				String password = credential.getPasswordHash();
 				String insert = "INSERT INTO users VALUES(?,?);";
@@ -75,15 +89,24 @@ public class Database {
 		}
 	}
 	
+	/**
+	 * Get the credentials of a user
+	 * @param username The username of the user 
+	 * @return The hashed password of the user, or null if user doesn't exist
+	 */
 	public String getCredentials(String username) {
 		String hashedPass = null;
 		String view = "SELECT * FROM users WHERE username = ?;";
 		try (PreparedStatement s3 = connection.prepareStatement(view)) {
 			s3.setString(1,username);
 			ResultSet rs = s3.executeQuery();
-			int rows = rs.getRow();
-			if(rows==0) {
-				return null;
+			int rows = 0;
+			if (rs.next()) {
+				rows++; 
+	        }
+			
+			if(rows==0) {  
+				return null;  // if user is not in the table, return null
 			}
 			hashedPass = rs.getString(2);
 		} catch (SQLException e) {
@@ -91,5 +114,18 @@ public class Database {
 			e.printStackTrace();
 		}
 		return hashedPass;
+	}
+	
+	/**
+	 * Close the connection 
+	 */
+	public void disconnect() {
+		if(connection!=null) {
+			try {
+				connection.close();
+			} catch(SQLException e) {
+				e.printStackTrace(System.err);
+			}
+		}
 	}
 }
